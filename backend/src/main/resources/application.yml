@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: learning-backend
+  
+  datasource:
+    url: jdbc:h2:mem:adaptive_learning
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # Spring AI (Configured for Groq Cloud API)
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY:}
+      base-url: https://api.groq.com/openai/v1
+      chat:
+        options:
+          model: openai/gpt-oss-20b
+          temperature: 0.7
+
+adaptive:
+  monitoring:
+    face-absence-threshold-ms: 5000
+    focus-loss-threshold-ms: 3000
+    inactivity-threshold-ms: 30000
+    engagement-window-ms: 300000
+    engagement-threshold-percent: 60
+    engagement-medium-threshold-percent: 30

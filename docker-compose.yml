@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension for RAG
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: adaptive_learning_db
+    environment:
+      POSTGRES_USER: adaptive_user
+      POSTGRES_PASSWORD: adaptive_password
+      POSTGRES_DB: adaptive_learning
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Redis for Session Management & Interview Memory
+  redis:
+    image: redis:7-alpine
+    container_name: adaptive_learning_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

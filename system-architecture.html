@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture Diagram</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: { 
+                curve: 'basis',
+                nodeSpacing: 70,
+                rankSpacing: 70
+            },
+            themeVariables: {
+                fontSize: '24px',
+                fontFamily: 'Segoe UI',
+                clusterBkg: '#f8fafc',
+                clusterBorder: '#cbd5e1'
+            }
+        });
+    </script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: white; 
+        }
+        .mermaid { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            max-width: 95vw;
+        }
+    </style>
+</head>
+<body>
+    <div class="mermaid">
+        graph TD
+            classDef client fill:#3b82f6,stroke:#1e3a8a,stroke-width:2px,color:white;
+            classDef backend fill:#10b981,stroke:#047857,stroke-width:2px,color:white;
+            classDef ai fill:#8b5cf6,stroke:#4c1d95,stroke-width:2px,color:white;
+            classDef data fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:white;
+
+            subgraph "Client Layer (Frontend Interface)"
+                A[React.js & Vite App]:::client
+            end
+
+            subgraph "Backend Layer (Application Server)"
+                C[Spring Boot REST API]:::backend
+                D[Spring AI Orchestration]:::backend
+            end
+
+            subgraph "External AI Services (LLM Engine)"
+                E[Groq API: Meta Llama 3 8B]:::ai
+                F[Hugging Face Embeddings]:::ai
+            end
+
+            subgraph "Data & State Layer (Database & Cache)"
+                G[(PostgreSQL + pgvector)]:::data
+                H[(Redis Cache)]:::data
+            end
+
+            %% Connections
+            A <-->|HTTP / REST Requests| C
+            C <--> D
+            
+            D <-->|Ultra-Fast NLP Inference| E
+            D <-->|Vector Embedding Generation| F
+            
+            C <-->|User Data & Progress State| G
+            D <-->|Semantic Vector RAG Search| G
+            C <-->|Session & Interview Memory| H
+    </div>
+</body>
+</html>
