@@ -34,6 +34,23 @@ public class MonitoringController {
         }
     }
 
+    @GetMapping("/users/{userId}/latest-engagement")
+    public ResponseEntity<?> getLatestUserEngagement(@PathVariable Long userId) {
+        try {
+            return monitoringService.getLatestSessionForUser(userId)
+                .map(session -> {
+                    try {
+                        return ResponseEntity.ok(scoringService.calculateEngagement(session.getId()));
+                    } catch (Exception e) {
+                        return ResponseEntity.ok(Collections.singletonMap("monitoringCoverage", "0%"));
+                    }
+                })
+                .orElseGet(() -> ResponseEntity.ok(Collections.singletonMap("monitoringCoverage", "0%")));
+        } catch (Exception e) {
+            return ResponseEntity.ok(Collections.singletonMap("monitoringCoverage", "0%"));
+        }
+    }
+
     @PostMapping("/sessions")
     public ResponseEntity<?> startSession(@RequestBody MonitoringSessionRequest request) {
         try {

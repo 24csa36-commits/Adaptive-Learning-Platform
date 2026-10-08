@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import { mockQuiz } from '../data/mockData';
-import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Sparkles, Brain, Loader2 } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, CheckCircle2, Sparkles, Brain, Loader2, ShieldCheck } from 'lucide-react';
+import { useMonitoring } from '../context/MonitoringContext';
+import MonitoringWidget from '../components/MonitoringWidget';
 
 const QuizPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { startSession, closeSession, recordAnomaly } = useMonitoring();
+  const questionStartTimeRef = useRef(Date.now());
   const courseContext = location.state || {
     courseTitle: "Java Programming Masterclass",
     moduleTitle: "Java Concurrency & Multithreading",
@@ -22,8 +26,10 @@ const QuizPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // 1. Start the Adaptive Session
+  // 1. Start the Adaptive Session & Monitoring Layer
   useEffect(() => {
+    startSession({ context: 'ASSESSMENT', courseId: 1, lessonId: 1 });
+
     const startAdaptiveSession = async () => {
       setIsLoading(true);
       try {
@@ -56,6 +62,7 @@ const QuizPage = () => {
             alert("Failed to start quiz: " + firstQ.error);
         } else {
             setQuestions([firstQ]);
+            questionStartTimeRef.current = Date.now();
         }
       } catch (err) {
         console.error("Error starting adaptive session", err);
@@ -65,6 +72,10 @@ const QuizPage = () => {
     };
 
     startAdaptiveSession();
+
+    return () => {
+      closeSession();
+    };
   }, []);
 
   const handleSelectOption = (option) => {
@@ -73,6 +84,13 @@ const QuizPage = () => {
 
   const handleNextAdaptiveQuestion = async () => {
     if (!answers[currentQuestionIndex]) return; 
+    
+    // Check for rapid answer anomaly (< 2000ms)
+    const elapsed = Date.now() - questionStartTimeRef.current;
+    if (elapsed < 2000) {
+      recordAnomaly('ANSWER_TIMING_ANOMALY', elapsed, 'RAPID_SUBMISSION');
+    }
+    questionStartTimeRef.current = Date.now();
     
     setIsLoading(true);
     const currentQ = questions[currentQuestionIndex];
@@ -185,8 +203,11 @@ const QuizPage = () => {
               <h1 className="text-2xl font-bold text-white">{quizTitle}</h1>
               <p className="text-slate-400 text-xs mt-1">Question {currentQuestionIndex + 1}</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold border bg-slate-800 text-slate-200 border-slate-700">
-               <span className="text-sm text-slate-400">Session ID:</span> <span className="text-primary-400">#{sessionId}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <MonitoringWidget minimal={true} />
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold border bg-slate-800 text-slate-200 border-slate-700">
+                 <span className="text-sm text-slate-400">Session ID:</span> <span className="text-primary-400">#{sessionId}</span>
+              </div>
             </div>
           </div>
 
@@ -242,6 +263,7 @@ const QuizPage = () => {
 
         </div>
       </div>
+      <MonitoringWidget />
     </MainLayout>
   );
 };

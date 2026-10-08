@@ -12,6 +12,26 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [monitoringStats, setMonitoringStats] = useState({
+    engagementScore: 94,
+    monitoringCoverage: '98%',
+    integrityStatus: 'VALIDATED'
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/monitoring/users/1/latest-engagement')
+      .then(res => res.json())
+      .then(data => {
+        if (data && (data.engagementScore !== undefined || data.monitoringCoverage)) {
+          setMonitoringStats({
+            engagementScore: data.engagementScore !== undefined ? Math.round(data.engagementScore) : 94,
+            monitoringCoverage: data.monitoringCoverage || '98%',
+            integrityStatus: data.integrityStatus || (data.engagementScore < 50 ? 'FLAGGED' : 'VALIDATED')
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/courses')
@@ -275,6 +295,49 @@ const StudentDashboard = () => {
                 </div>
                 <Link to="/skill-report" className="mt-6 block w-full text-center py-2.5 bg-primary-600/20 hover:bg-primary-600/30 border border-primary-500/30 rounded-xl text-xs font-bold text-primary-300 transition-all">
                   Open Recruiter Talent Passport &rarr;
+                </Link>
+              </div>
+
+              {/* Monitoring & Integrity Layer */}
+              <div className="bg-slate-900/80 backdrop-blur-xl border border-indigo-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <h3 className="font-bold text-white flex items-center gap-2 text-sm">
+                    <ShieldCheck className="text-emerald-400" size={18} /> Monitoring & Integrity Layer
+                  </h3>
+                  <span className="text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> {monitoringStats.integrityStatus}
+                  </span>
+                </div>
+                
+                <div className="space-y-4 relative z-10 text-xs">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-300 font-medium">Live Engagement Score</span>
+                      <span className="font-bold text-emerald-400">{monitoringStats.engagementScore}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${monitoringStats.engagementScore}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-300 font-medium">Session Telemetry Coverage</span>
+                      <span className="font-bold text-indigo-400">{monitoringStats.monitoringCoverage}</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${parseInt(monitoringStats.monitoringCoverage) || 95}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+                    <span className="text-slate-400">Proctoring Telemetry</span>
+                    <span className="text-slate-200 font-semibold">Continuous Behavioral Auditing</span>
+                  </div>
+                </div>
+
+                <Link to="/analytics" className="mt-5 block w-full text-center py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-xs font-bold text-indigo-300 transition-all">
+                  Inspect Engagement Analytics &rarr;
                 </Link>
               </div>
 

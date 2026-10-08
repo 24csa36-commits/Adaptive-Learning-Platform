@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
-import { useAuth } from '../context/AuthContext';
 import { AlertTriangle, Clock, ShieldAlert, CheckCircle2, Loader2, Brain } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useMonitoring } from '../context/MonitoringContext';
+import MonitoringWidget from '../components/MonitoringWidget';
 
 const DiagnosticAssessmentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { updateProfile } = useAuth();
+  const { startSession, closeSession, recordAnomaly } = useMonitoring();
   const webcamRef = useRef(null);
   
   const { currentRole, targetRole, currentSkills } = location.state || {};
@@ -25,6 +28,14 @@ const DiagnosticAssessmentPage = () => {
   const [isTerminated, setIsTerminated] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
 
+  // Initialize Monitoring Layer Session
+  useEffect(() => {
+    startSession({ context: 'ASSESSMENT', courseId: 1, lessonId: 1 });
+    return () => {
+      closeSession();
+    };
+  }, []);
+
   // 0. Initialize Native Webcam (No npm dependencies required)
   useEffect(() => {
     let stream = null;
@@ -36,6 +47,7 @@ const DiagnosticAssessmentPage = () => {
         }
       } catch (err) {
         console.error("Camera access denied:", err);
+        recordAnomaly('MONITOR_UNAVAILABLE', 0, 'CAMERA_PERMISSION_DENIED');
       }
     };
     startWebcam();
@@ -123,12 +135,16 @@ const DiagnosticAssessmentPage = () => {
   const handleSuspiciousActivity = (reason) => {
     if (isTerminated) return;
     
+    // Ingest anomaly to backend monitoring layer
+    recordAnomaly('FOCUS_LOST', 3500, 'ANTI_CHEAT_SUSPICIOUS');
+
     const newWarnings = warnings + 1;
     setWarnings(newWarnings);
     
     if (newWarnings >= 3) {
       setIsTerminated(true);
       setShowWarningModal(false);
+      closeSession();
     } else {
       setShowWarningModal(true);
       // Auto-hide warning after 3 seconds
@@ -196,6 +212,9 @@ const DiagnosticAssessmentPage = () => {
            currentSkills: currentSkills || [], diagnosticResult: diagnosticResult
        });
     }
+    
+    // Close monitoring session
+    closeSession();
     
     navigate('/analytics', { state: { diagnosticResult } });
   };
@@ -384,6 +403,8 @@ const DiagnosticAssessmentPage = () => {
         </div>
       )}
 
+      {/* Live Monitoring HUD */}
+      <MonitoringWidget />
     </MainLayout>
   );
 };

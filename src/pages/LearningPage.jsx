@@ -5,13 +5,24 @@ import {
   PlayCircle, CheckCircle2, ChevronLeft, ChevronRight, MessageSquare, 
   BookOpen, Code2, Sparkles, Activity, Send, Bot, User, Loader2 
 } from 'lucide-react';
+import { useMonitoring } from '../context/MonitoringContext';
+import MonitoringWidget from '../components/MonitoringWidget';
 
 const LearningPage = () => {
   const { courseId, lessonId } = useParams();
+  const { startSession, closeSession } = useMonitoring();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedModuleIdx, setSelectedModuleIdx] = useState(0);
   const [selectedLessonIdx, setSelectedLessonIdx] = useState(0);
+
+  // Initialize Monitoring Session for Lesson
+  useEffect(() => {
+    startSession({ context: 'LEARNING', courseId: courseId || 1, lessonId: lessonId || 1 });
+    return () => {
+      closeSession();
+    };
+  }, [courseId, lessonId]);
 
   // Embedded AI Tutor & Notes State
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'notes'
@@ -229,10 +240,13 @@ const LearningPage = () => {
             </div>
 
             {/* Video Player Header & Button */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-300 flex items-center gap-2">
-                <PlayCircle size={16} className="text-primary-400" /> Lesson Video
-              </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-bold text-slate-300 flex items-center gap-2">
+                  <PlayCircle size={16} className="text-primary-400" /> Lesson Video
+                </h2>
+                <MonitoringWidget minimal={true} />
+              </div>
               <button 
                 onClick={handleGenerateAIVideo}
                 disabled={isAiVideoGenerating || showAiVideo}
@@ -431,6 +445,7 @@ const LearningPage = () => {
         </div>
 
       </div>
+      <MonitoringWidget />
     </MainLayout>
   );
 };

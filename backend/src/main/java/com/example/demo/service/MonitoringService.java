@@ -24,6 +24,10 @@ public class MonitoringService {
         this.eventRepository = eventRepository;
     }
 
+    public java.util.Optional<MonitoringSession> getLatestSessionForUser(Long userId) {
+        return sessionRepository.findFirstByUserIdOrderByStartedAtDesc(userId);
+    }
+
     public MonitoringSession createSession(Long userId, Long courseId, Long lessonId, String contextStr) {
         MonitoringSession session = new MonitoringSession();
         session.setUserId(userId);

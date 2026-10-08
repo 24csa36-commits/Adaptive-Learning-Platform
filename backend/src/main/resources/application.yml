@@ -24,7 +24,7 @@ spring:
   # Spring AI (Configured for Groq Cloud API)
   ai:
     openai:
-      api-key: ${GROQ_API_KEY:}
+      api-key: ${GROQ_API_KEY:mock-key-placeholder}
       base-url: https://api.groq.com/openai/v1
       chat:
         options:
