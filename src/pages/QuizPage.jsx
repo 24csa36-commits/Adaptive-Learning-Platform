@@ -78,6 +78,37 @@ const QuizPage = () => {
     };
   }, []);
 
+  const checkAnswerCorrect = (userAns, correctAns, options = []) => {
+    if (!userAns || !correctAns) return false;
+    const u = userAns.toString().trim();
+    const c = correctAns.toString().trim();
+
+    // 1. Direct case-insensitive equality
+    if (u.toLowerCase() === c.toLowerCase()) return true;
+
+    // 2. Normalized match (strip leading 'A.', 'B)', '(C)', etc.)
+    const cleanU = u.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim();
+    const cleanC = c.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim();
+    if (cleanU && cleanC && cleanU === cleanC) return true;
+
+    // 3. If correct answer is single letter (e.g. 'A' or 'B')
+    const letterMatch = c.match(/^[A-D]$/i);
+    if (letterMatch && options && options.length > 0) {
+      const letterIdx = letterMatch[0].toUpperCase().charCodeAt(0) - 65;
+      if (options[letterIdx]) {
+        const optText = options[letterIdx].toString().trim();
+        if (optText.toLowerCase() === u.toLowerCase()) return true;
+        if (optText.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim() === cleanU) return true;
+      }
+    }
+
+    // 4. Substring containment
+    if (cleanC.length > 8 && cleanU.includes(cleanC)) return true;
+    if (cleanU.length > 8 && cleanC.includes(cleanU)) return true;
+
+    return false;
+  };
+
   const handleSelectOption = (option) => {
     setAnswers({ ...answers, [currentQuestionIndex]: option });
   };
@@ -95,7 +126,7 @@ const QuizPage = () => {
     setIsLoading(true);
     const currentQ = questions[currentQuestionIndex];
     const userSelected = answers[currentQuestionIndex];
-    const isCorrect = userSelected === currentQ.correctAnswer;
+    const isCorrect = checkAnswerCorrect(userSelected, currentQ.correctAnswer, currentQ.options);
 
     try {
       // Send answer to backend (Updates DB state & LearnerMastery, returns next question)
@@ -123,29 +154,45 @@ const QuizPage = () => {
           setMasteryScore(rawJson.finalScore);
           
           let correctCount = 0;
+          const userAnswersSummary = {};
           for (let i = 0; i < questions.length; i++) {
-              if (answers[i] === questions[i].correctAnswer) correctCount++;
+              const ans = answers[i] || userSelected;
+              const q = questions[i];
+              const ok = checkAnswerCorrect(ans, q.correctAnswer, q.options);
+              if (ok) correctCount++;
+              userAnswersSummary[`Q${i+1}: ${q.text}`] = `Selected: "${ans}" | Correct: "${q.correctAnswer}" | Status: ${ok ? 'CORRECT' : 'INCORRECT'}`;
+          }
+
+          // Call Real AI Quiz Diagnostic Evaluation Endpoint
+          let generatedDiagnostic = null;
+          try {
+            const evalRes = await fetch('http://localhost:8080/api/ai/quiz/evaluate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                quizTitle: courseContext.moduleTitle,
+                timeTakenSeconds: 120,
+                userAnswers: userAnswersSummary
+              })
+            });
+            const evalData = await evalRes.json();
+            const parsedEval = JSON.parse(evalData.response);
+            if (parsedEval && parsedEval.strengths && parsedEval.strengths.length > 0) {
+              generatedDiagnostic = parsedEval;
+            }
+          } catch (evalErr) {
+            console.warn("AI Diagnostic evaluation fallback used:", evalErr);
           }
           
-          let generatedDiagnostic = {
-              strengths: [],
-              misconceptions: [],
-              recommendedNextStep: ""
-          };
-          
-          if (rawJson.finalScore >= 75) {
-              generatedDiagnostic.strengths.push(`Excellent mastery of ${courseContext.moduleTitle}.`);
-              generatedDiagnostic.misconceptions.push("Minor edge cases to refine.");
-              generatedDiagnostic.recommendedNextStep = "Proceed to the next advanced module.";
-          } else if (rawJson.finalScore >= 40) {
-              generatedDiagnostic.strengths.push(`Basic understanding of ${courseContext.moduleTitle}.`);
-              generatedDiagnostic.misconceptions.push("Struggled with intermediate application of the concepts.");
-              generatedDiagnostic.recommendedNextStep = "Review the core examples before proceeding.";
-          } else {
-              generatedDiagnostic.strengths.push("Attempted the questions.");
-              generatedDiagnostic.misconceptions.push(`Fundamental misunderstanding of ${courseContext.moduleTitle}.`);
-              generatedDiagnostic.recommendedNextStep = "Please consult the AI Mentor for a deep dive explanation.";
+          if (!generatedDiagnostic) {
+            generatedDiagnostic = {
+              strengths: [rawJson.finalScore >= 70 ? `Strong conceptual understanding of ${courseContext.moduleTitle}.` : `Demonstrated familiarity with fundamental terminology in ${courseContext.moduleTitle}.`],
+              misconceptions: [rawJson.finalScore >= 70 ? "Minor edge case application to refine." : `Struggled with complex scenarios in ${courseContext.moduleTitle}.`],
+              recommendedNextStep: rawJson.finalScore >= 70 ? "Proceed to the next advanced module." : "Consult the 24/7 AI Mentor for an interactive deep dive."
+            };
           }
+
+          closeSession();
 
           navigate('/quiz-result', {
             state: {

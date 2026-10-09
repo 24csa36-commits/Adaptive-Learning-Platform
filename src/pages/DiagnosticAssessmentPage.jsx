@@ -189,13 +189,56 @@ const DiagnosticAssessmentPage = () => {
     setAnswers({ ...answers, [currentQuestionIdx]: option });
   };
 
+  const checkAnswerCorrect = (userAns, correctAns, options = []) => {
+    if (!userAns || !correctAns) return false;
+    const u = userAns.toString().trim();
+    const c = correctAns.toString().trim();
+
+    // 1. Direct case-insensitive equality
+    if (u.toLowerCase() === c.toLowerCase()) return true;
+
+    // 2. Normalized match (strip leading 'A.', 'B)', '(C)', etc.)
+    const cleanU = u.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim();
+    const cleanC = c.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim();
+    if (cleanU && cleanC && cleanU === cleanC) return true;
+
+    // 3. If correct answer is single letter (e.g. 'A' or 'B')
+    const letterMatch = c.match(/^[A-D]$/i);
+    if (letterMatch && options && options.length > 0) {
+      const letterIdx = letterMatch[0].toUpperCase().charCodeAt(0) - 65;
+      if (options[letterIdx]) {
+        const optText = options[letterIdx].toString().trim();
+        if (optText.toLowerCase() === u.toLowerCase()) return true;
+        if (optText.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim() === cleanU) return true;
+      }
+    }
+
+    // 4. If user selected answer is single letter
+    const userLetterMatch = u.match(/^[A-D]$/i);
+    if (userLetterMatch && options && options.length > 0) {
+      const letterIdx = userLetterMatch[0].toUpperCase().charCodeAt(0) - 65;
+      if (options[letterIdx]) {
+        const optText = options[letterIdx].toString().trim();
+        if (optText.toLowerCase() === c.toLowerCase()) return true;
+        if (optText.toLowerCase().replace(/^[a-d][\.\)\:\-\s]+/i, '').trim() === cleanC) return true;
+      }
+    }
+
+    // 5. Substring containment
+    if (cleanC.length > 8 && cleanU.includes(cleanC)) return true;
+    if (cleanU.length > 8 && cleanC.includes(cleanU)) return true;
+
+    return false;
+  };
+
   const handleSubmitDiagnostic = () => {
-    // Evaluate performance
+    // Evaluate performance with precise matching
     let correctCount = 0;
     const topicScores = {};
 
     questions.forEach((q, index) => {
-      const isCorrect = answers[index] === q.correctAnswer || (q.correctAnswer && answers[index] && answers[index].startsWith(q.correctAnswer));
+      const userSelected = answers[index];
+      const isCorrect = checkAnswerCorrect(userSelected, q.correctAnswer, q.options);
       if (isCorrect) correctCount++;
 
       const topic = q.topic || 'General';
@@ -206,7 +249,7 @@ const DiagnosticAssessmentPage = () => {
     });
 
     const diagnosticResult = {
-      score: (correctCount / questions.length) * 100,
+      score: Math.round((correctCount / questions.length) * 100),
       correctCount,
       totalQuestions: questions.length,
       topicScores
