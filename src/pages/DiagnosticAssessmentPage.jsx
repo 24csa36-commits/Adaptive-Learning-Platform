@@ -88,18 +88,26 @@ const DiagnosticAssessmentPage = () => {
         // Since we hijack the adaptive endpoint, we parse the array
         const parsedQuestions = JSON.parse(data.response);
         
-        if (Array.isArray(parsedQuestions)) {
+        if (Array.isArray(parsedQuestions) && parsedQuestions.length > 0) {
           setQuestions(parsedQuestions);
-        } else {
-          // Fallback if AI fails array format
+        } else if (parsedQuestions && typeof parsedQuestions === 'object' && parsedQuestions.text) {
           setQuestions([parsedQuestions]);
+        } else {
+          throw new Error("Empty or invalid questions received from AI service");
         }
       } catch (err) {
-        console.error("AI Generation failed, using fallback.", err);
-        // Fallback for demonstration
+        console.error("AI Generation failed, using robust fallback questions.", err);
         setQuestions([
-          { id: 1, text: `What is the primary function of a Load Balancer in a ${targetRole} architecture?`, options: ["Database caching", "Distributing network traffic", "Encrypting passwords", "Compiling code"], correctAnswer: "Distributing network traffic", topic: "Networking", difficulty: "MEDIUM" },
-          { id: 2, text: `Which OS concept is most critical for a ${targetRole} to manage memory?`, options: ["Virtual Memory", "GUI Rendering", "File Extensions", "CSS Styling"], correctAnswer: "Virtual Memory", topic: "OS", difficulty: "HARD" }
+          { id: 1, text: `What is the primary function of a Load Balancer in a ${targetRole} architecture?`, options: ["Database caching", "Distributing network traffic across healthy servers", "Encrypting client passwords", "Compiling production source code"], correctAnswer: "Distributing network traffic across healthy servers", topic: "Networking", difficulty: "EASY" },
+          { id: 2, text: `Which OS concept is most critical for a ${targetRole} to manage memory and prevent out-of-memory crashes?`, options: ["Virtual Memory and Paging", "GUI Rendering Pipeline", "File Extension Association", "CSS Layout Engine"], correctAnswer: "Virtual Memory and Paging", topic: "OS", difficulty: "MEDIUM" },
+          { id: 3, text: "How does CPU cache-line pre-fetching give Arrays an advantage over Linked Lists?", options: ["Contiguous memory enables fast sequential L1/L2 cache prefetching", "Arrays compress memory footprint automatically", "Linked lists require double CPU arithmetic cycles", "Arrays bypass RAM entirely"], correctAnswer: "Contiguous memory enables fast sequential L1/L2 cache prefetching", topic: "Data Structures", difficulty: "MEDIUM" },
+          { id: 4, text: "What happens when two threads access a shared mutable variable without synchronization?", options: ["A compiler warning is generated", "Race conditions and inconsistent reads can occur", "The JVM terminates the process", "The operating system serializes access automatically"], correctAnswer: "Race conditions and inconsistent reads can occur", topic: "Concurrency", difficulty: "HARD" },
+          { id: 5, text: "Which database index structure is most commonly used for fast range-based and equality queries in relational DBs?", options: ["B+ Tree", "Hash Table", "Binary Search Tree", "Linked List"], correctAnswer: "B+ Tree", topic: "Databases", difficulty: "MEDIUM" },
+          { id: 6, text: "In RESTful API design, which HTTP method is considered idempotent and used to replace an entire resource?", options: ["PUT", "POST", "PATCH", "DELETE"], correctAnswer: "PUT", topic: "API Design", difficulty: "EASY" },
+          { id: 7, text: "According to the CAP Theorem, what tradeoff must a distributed system make in the presence of a network partition?", options: ["Consistency vs Availability", "Latency vs Throughput", "Security vs Durability", "Concurrency vs Isolation"], correctAnswer: "Consistency vs Availability", topic: "Distributed Systems", difficulty: "HARD" },
+          { id: 8, text: "What strategy effectively prevents the 'Cache Stampede' problem when an expensive cache key expires?", options: ["Mutex locking or probabilistic early expiration", "Increasing database query timeout", "Purging all related keys", "Doubling Redis memory allocation"], correctAnswer: "Mutex locking or probabilistic early expiration", topic: "Caching", difficulty: "HARD" },
+          { id: 9, text: "What is the average time complexity of lookups in a well-balanced Hash Table?", options: ["O(1)", "O(log N)", "O(N)", "O(N log N)"], correctAnswer: "O(1)", topic: "Data Structures", difficulty: "EASY" },
+          { id: 10, text: "What is the main benefit of containerizing applications using Docker in modern deployment pipelines?", options: ["Reproducible runtime environments across development and production", "Automatic database indexing", "Bypassing network security firewalls", "Eliminating all runtime memory allocation"], correctAnswer: "Reproducible runtime environments across development and production", topic: "DevOps", difficulty: "EASY" }
         ]);
       } finally {
         setIsLoading(false);

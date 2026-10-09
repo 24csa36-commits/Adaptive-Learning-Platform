@@ -42,6 +42,9 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+*local.yml
+*local.properties
+application-local.yml
 
 # OS files
 .DS_Store

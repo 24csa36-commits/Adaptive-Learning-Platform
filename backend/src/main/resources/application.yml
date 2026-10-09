@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: learning-backend
+  config:
+    import: "optional:classpath:application-local.yml"
   
   datasource:
     url: jdbc:h2:mem:adaptive_learning
