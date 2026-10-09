@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
+import { mockCourses } from '../data/mockData';
 import { Search, Filter, Clock, BookOpen, ChevronRight, PlayCircle, Sparkles } from 'lucide-react';
 
 const SkillExplorerPage = () => {
@@ -21,13 +22,16 @@ const SkillExplorerPage = () => {
     fetch('http://localhost:8080/api/courses')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setDbCourses(data);
+        } else {
+          setDbCourses(mockCourses);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Failed to fetch courses", err);
+        console.warn("Failed to fetch backend courses, displaying catalog:", err);
+        setDbCourses(mockCourses);
         setLoading(false);
       });
   }, []);
@@ -47,21 +51,21 @@ const SkillExplorerPage = () => {
     !knownSkills.some(k => k.toLowerCase() === skill.toLowerCase())
   );
 
-  // Use REAL courses that match what the user is missing
-  // For now, since the DB only has Java Backend Fundamentals, we will just show the DB courses
-  // if they match ANY missing skill, otherwise we don't show it.
-  const recommendedCourses = dbCourses.filter(course => {
-    // Basic recommendation logic: Does the course title/desc overlap with missing skills?
-    const text = (course.title + " " + course.description).toLowerCase();
-    return missingSkills.some(skill => text.includes(skill.toLowerCase())) || missingSkills.length > 0; // If they have missing skills, just recommend the backend courses for now since DB is small.
-  });
+  // Show all available courses in the catalog, prioritizing missing skill recommendations
+  const categories = ['All', 'Backend Development', 'Computer Science', 'Programming Languages', 'Role Required'];
 
-  const categories = ['All', 'Computer Science', 'Backend Development', 'Role Required'];
+  const filteredCourses = dbCourses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
 
-  const filteredCourses = recommendedCourses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || course.category === activeCategory;
-    return matchesSearch && matchesCategory;
+    if (activeCategory === 'All') return true;
+    if (activeCategory === 'Role Required') {
+      const text = (course.title + " " + course.description).toLowerCase();
+      return missingSkills.some(skill => text.includes(skill.toLowerCase()));
+    }
+    return course.category === activeCategory;
   });
 
   return (

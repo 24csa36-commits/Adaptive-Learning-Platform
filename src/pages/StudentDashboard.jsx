@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
+import { mockCourses } from '../data/mockData';
 import { 
   Flame, BookOpen, Target, Award, PlayCircle, 
   Activity, Code, PieChart, Lightbulb, CheckCircle2,
@@ -45,7 +46,9 @@ const StudentDashboard = () => {
         setLoading(false);
       })
       .catch(err => {
-        setCourses([]);
+        console.warn("Using Java course fallback for dashboard:", err);
+        const javaCourse = mockCourses.find(c => c.title.toLowerCase().includes('java')) || mockCourses[0];
+        setCourses([javaCourse]);
         setLoading(false);
       });
   }, [user]);
