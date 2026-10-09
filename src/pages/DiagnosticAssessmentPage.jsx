@@ -5,13 +5,13 @@ import { AlertTriangle, Clock, ShieldAlert, CheckCircle2, Loader2, Brain } from 
 import { useAuth } from '../context/AuthContext';
 import { useMonitoring } from '../context/MonitoringContext';
 import MonitoringWidget from '../components/MonitoringWidget';
+import ComputerVisionWebcam from '../components/ComputerVisionWebcam';
 
 const DiagnosticAssessmentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { updateProfile } = useAuth();
   const { startSession, closeSession, recordAnomaly } = useMonitoring();
-  const webcamRef = useRef(null);
   
   const { currentRole, targetRole, currentSkills } = location.state || {};
 
@@ -36,27 +36,7 @@ const DiagnosticAssessmentPage = () => {
     };
   }, []);
 
-  // 0. Initialize Native Webcam (No npm dependencies required)
-  useEffect(() => {
-    let stream = null;
-    const startWebcam = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (webcamRef.current) {
-          webcamRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Camera access denied:", err);
-        recordAnomaly('MONITOR_UNAVAILABLE', 0, 'CAMERA_PERMISSION_DENIED');
-      }
-    };
-    startWebcam();
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
+  // 0. Real-time Computer Vision proctoring is managed by ComputerVisionWebcam component
 
   // 1. Fetch AI Diagnostic Questions based on Target Role
   useEffect(() => {
@@ -385,28 +365,12 @@ const DiagnosticAssessmentPage = () => {
           {/* Right Sidebar: Webcam & Proctoring Status */}
           <div className="space-y-6">
             
-            {/* Webcam Feed */}
-            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden">
-               <div className="absolute top-6 left-6 z-10 flex items-center gap-2 bg-black/60 px-2 py-1 rounded text-xs font-bold text-rose-400 backdrop-blur-sm border border-rose-500/30">
-                 <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div> REC
-               </div>
-               <div className="rounded-xl overflow-hidden bg-black aspect-video border border-slate-800 relative">
-                  <video 
-                    ref={webcamRef} 
-                    autoPlay 
-                    playsInline 
-                    muted 
-                    className="w-full h-full object-cover transform -scale-x-100"
-                  />
-                  {/* Fake Facial Tracking Box Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-32 h-40 border-2 border-emerald-500/50 rounded-lg"></div>
-                  </div>
-               </div>
-               <p className="text-center text-xs text-slate-500 mt-3 font-semibold flex items-center justify-center gap-1">
-                 <ShieldAlert size={12} /> Live Proctoring Active
-               </p>
-            </div>
+            {/* Real-Time Computer Vision Proctor Feed */}
+            <ComputerVisionWebcam 
+              onAnomaly={recordAnomaly}
+              onViolationStrike={(reason) => handleSuspiciousActivity(reason)}
+              isActive={!isTerminated && !isLoading}
+            />
 
             {/* Strike System */}
             <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-lg">

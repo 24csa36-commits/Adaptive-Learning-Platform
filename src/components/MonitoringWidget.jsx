@@ -160,18 +160,24 @@ const MonitoringWidget = ({ minimal = false }) => {
           </div>
 
           {/* Demonstration Trigger Buttons */}
-          <div className="flex gap-2 pt-1 border-t border-slate-800/80">
+          <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800/80">
             <button
               onClick={() => recordAnomaly('FOCUS_LOST', 4000, 'DEMO_TEST')}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
             >
-              <Zap size={11} className="text-amber-400" /> Test Focus Penalty
+              <Zap size={11} className="text-amber-400" /> Focus (4s)
+            </button>
+            <button
+              onClick={() => recordAnomaly('FACE_ABSENT', 5500, 'DEMO_TEST')}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+            >
+              <EyeOff size={11} className="text-rose-400" /> Face Absent
             </button>
             <button
               onClick={() => recordAnomaly('ANSWER_TIMING_ANOMALY', 800, 'DEMO_TEST')}
-              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-1.5 py-1.5 rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
             >
-              <AlertTriangle size={11} className="text-rose-400" /> Test Fast Anomaly
+              <AlertTriangle size={11} className="text-amber-400" /> Fast (0.8s)
             </button>
           </div>
         </div>
